@@ -90,7 +90,7 @@ open the related account, Zipped Asset, Unified Asset, or source chain directly 
 
 ---
 
-## 3. Депозиты XRP и Solana: комиссия удержана, но на обозревателе «Network Fee: None»
+## 3. Комиссия удержана, а API и обозреватель пишут «Network Fee: None» — депозиты XRP/SOL и 30% выводов во всех сетях
 
 Сама комиссия за ввод законная: биржа её объявляет (в окне депозита «Deposit fee 0.00002 BTC»,
 в истории депозитов «Fee applied 0.0001 tETH»), размер берётся из `networkFee` в конфиге сети.
@@ -164,6 +164,29 @@ flow_SMQSpzMh1NM (tSOL, в API requestFee нет): DepositFeeLocked feeZAmount =
 ```
 Для сравнения: у 18 депозитов из 10 других сетей `requestFee` в API = `DepositFeeLocked` в блокчейне = чеканка получателю комиссий.
 
+
+**Выводы — то же, и хуже: показана неверная полученная сумма** (снимок 28.09 ~17:15 UTC, 200 завершённых выводов):
+```
+без requestFee в API: 61 из 200 — ethereum-sepolia 34/119, ripple 5/12, bsc 4/13, robinhood 4/13, base 4/13,
+                      solana 4/4, avalanche-fuji 3/8, arbitrum 2/12, litecoin 1/3 (bitcoin 0/3)
+```
+По одному выводу из каждой сети — сожжённая сумма в блокчейне (`ZTokenBurned` в tx шага BRIDGE_FULFILLMENT)
+меньше суммы вывода ровно на `networkFee` конфига, а API пишет fee нет и «к отправке» = полная сумма:
+```
+flow_WmsSrDpe1Ng USDC sepolia : API gross 100,   net 100    | сожжено 99.6    | удержано 0.4
+flow_A1dVQD4FPHh tXRP         : API gross 2,     net 2      | сожжено 1.8     | удержано 0.2
+flow_7uxDcJAdSxB tSOL         : API gross 0.01,  net 0.01   | сожжено 0.009   | удержано 0.001
+flow_FNYMrF8Y4rY tAVAX        : API gross 0.008, net 0.008  | сожжено 0.004   | удержано 0.004
+flow_3RJLC8VuPY8 arbitrum     : 0.1 -> 0.09998 · flow_Tc1EyCTyQMe base: 0.002 -> 0.00195 · flow_5PtUV3SHtR7 bsc: 0.0005 -> 0.00049
+flow_CJqzMivpmnT robinhood    : 0.0003 -> 0.00028 · flow_iNUSfgD4TVk litecoin: 0.002 -> 0.0019
+```
+Реальная доставка `flow_WmsSrDpe1Ng`: Sepolia tx `0xc9473e80157a0b0065d0375d87fe4defb88255a8d00e4a927ed5620e286cf705`
+(хэш из `commitWithdrawTxHash` в сети Polyester), status 1, ERC-20 Transfer **99.6** USDC на
+`0x5a8a788e2efdef6898764a978df3bedcf8425c7a` (= destinationAddress в API).
+Страница `/flow/flow_WmsSrDpe1Ng`: «100 USDC Withdraw · Network Fee None · **Settled Amount 100 USDC**» — пользователь
+видит 100, получил 99.6.
+Для сравнения, вывод с комиссией `flow_czSz3FJSxo8`: страница «Network Fee 0.004 tAVAX · Settled Amount 0.004 tAVAX»,
+в Avalanche Fuji tx `0xf516fc83…2f25` — 0.004 AVAX на тот же адрес. Верно.
 ---
 
 ## 4. Главная: «Total Txns / TPS / TVL (Polyester Exchange)» — числа зашиты в код
