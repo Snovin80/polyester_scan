@@ -29,7 +29,8 @@
   проверкой Cloudflare «Just a moment…» **для curl**. Из Python (urllib) в 16:05–16:15 UTC ответы
   шли нормально. Методы `marketdata.*` и `marketoverview.*` открыты для всех.
 - Документация `testnet.polyester.com/docs/...` из облачной среды закрыта проверкой Cloudflare
-  (и для curl, и для headless-браузера), поэтому сверить находки с ней не удалось.
+  (и для curl, и для headless-браузера). Есть сохранённая копия от 10.09 в `docs/snapshot_2026-09-10/`
+  (файлы по 1–3,6 МБ, искать grep'ом; страница начинается строкой `===== адрес =====`).
 
 ## 1. Blockscout API — `https://scan.polyester.live`
 
@@ -122,6 +123,20 @@ ListFlowsRequest: limit(uint32, по коду сайта 0..500, по умолч
 POST https://api.testnet.polyester.com/chain.lifecycle.v1.LifecycleReadService/ListFlows
 {"limit":3,"polyesterChainIds":[3]}
 ```
+
+Те же методы есть в REST (справочник api-docs, копия 10.09; примеры там на старом адресе альфы
+`api-devnet.polyester.ai`, на тестнете — `api.testnet.polyester.com`):
+
+| REST | = RPC | Живьём |
+|---|---|---|
+| `GET /v1/chain/flows` (flowKind, flowState, limit, orderBy, ownerAccountId, pageToken, polyesterChainIds, scope, sort, txRef, unifiedAssetIds, zippedAssetIds) | ListFlows | не проверял |
+| `GET /v1/chain/flows/{flow_id}` | GetFlowById | 200, 28.09 16:36 UTC |
+| `GET /v1/chain/flows/by-tx/{tx_hash}/matches` | ListFlowsByTx | не проверял |
+| `GET /v1/chain/deposit-withdraw/config` | ZipperService/GetDepositWithdrawConfig | не проверял |
+| `GET /v1/chain/analytics/zipped-asset-supply`, `…/group`, `/v1/chain/analytics/unified-asset-balances` | ChainAnalyticsService | не проверял |
+
+`pageToken` в живом API — курсор `base64({"v":2,"s":…,"o":…,"m":<ms>,"f":"flow_…"})`
+(в примере справочника старый вид `{"offset":100}`).
 
 Другие сервисы в бандле (публичные, без входа — только часть):
 

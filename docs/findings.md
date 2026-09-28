@@ -1,9 +1,15 @@
 # Находки: Polyester Scan testnet
 
-Проверено 28.09.2026, 15:40–16:15 UTC, живыми запросами из облачной среды.
+Проверено 28.09.2026, 15:40–16:40 UTC, живыми запросами из облачной среды.
 Основные находки 1–10 повторяет `python3 scan_probe.py` (п. 5 — только если застанет отставание счётчика).
-Сверить с документацией не удалось: `testnet.polyester.com/docs/...` из облака закрыт
-проверкой Cloudflare. Ссылки на доки нужно добавить вручную.
+
+Документация: живые `testnet.polyester.com/docs/...` из облака закрыты Cloudflare, поэтому
+цитаты — из сохранённой автором копии от 10.09 (`docs/snapshot_2026-09-10/`, тогда доки были на
+`testing.polyester.com`). Перед отправкой команде сверить формулировки с текущими доками.
+
+Уже отправлено команде (по `docs/bot/CLAUDE_bot.md` и журналу): про обозреватель — ничего.
+Родственное: адрес альфы `api-devnet.polyester.ai` в доках SDK (25.09) — см. п. 6;
+`tsSec` в миллисекундах в MCP (28.09) — см. раздел «Дополнения к отправленному».
 
 Порядок — от важного к мелочам.
 
@@ -29,6 +35,9 @@ API отдаёт подпись правильно (`GetFlowById` → `sourceTxH
 
 **Ожидалось:** подпись как есть. В Solana подпись — base58, регистр в нём значимый.
 В конфиге сайта у сети стоит `isCaseSensitive:true`.
+
+**Документация** (user-docs → Polyester Scan → Asset Flows): «Transaction links take you to the public
+record for that stage. External-chain links open the relevant network explorer».
 
 **Почему ошибка:** ссылка ведёт на несуществующую транзакцию. Причина в коде:
 `chunks/B-stKme4.js` — `function I(e){return e.trim().toLowerCase()}` применяется к `txRef` шага
@@ -61,6 +70,10 @@ mainnet [None, None, None]
 
 **Ожидалось:** `https://solscan.io/?cluster=devnet`, `https://mempool.space/testnet`,
 `https://litecoinspace.org/testnet`.
+
+**Документация** (Asset Flows): «External-chain links open the relevant network explorer… You can also
+open the related account, Zipped Asset, Unified Asset, or source chain directly from the Flow»;
+(Tokens & Chains): у страницы сети есть «external explorer link».
 
 **Почему ошибка:** ведёт на главную основной сети. Причина: `chunks/Dj4nS8JF.js`,
 `function I(e){ return new URL(e).origin }` — от адреса остаётся только домен.
@@ -96,6 +109,20 @@ FLOW_STEP_SETTLEMENT amountE18.lo = 1800000000000000000
 Страница `/flow/flow_4xW7RUSVcPK`: `Principal Amount 2 tXRP … Network Fee None Credited Amount 1.8 tXRP`.
 Конфиг: `code:"ripple-testnet" … zippedAssetId:14, isNativeAsset:true, networkFee:"0.2"`.
 Solana: `/flow/flow_SMQSpzMh1NM` — 0.01 → 0.009 tSOL, `Network Fee None`, в конфиге `networkFee:"0.001"`.
+
+Обратная проверка через REST из справочника (28.09 16:36 UTC, `Content-Type: application/json`):
+```
+GET https://api.testnet.polyester.com/v1/chain/flows/flow_4xW7RUSVcPK -> 200, summary.amountE18={"lo":"2000000000000000000"}, requestFee: <нет поля>
+GET https://api.testnet.polyester.com/v1/chain/flows/flow_W7ZGpHHftaT -> 200, summary.requestFee={"amountE18":{"lo":"100000000000000"},"assetIds":{"unifiedAssetId":28,"zippedAssetId":2},"recipientAddress":"0x4990534d6bfe03c17caad010931b467cd5fbec3f","status":"SETTLED"}
+```
+
+**Документация:**
+- Deposit & Withdrawal Fees: «A deposit fee is deducted from the amount credited»; в таблице
+  «XRP Ripple Testnet 0.2 XRP», «SOL Solana Devnet 0.001 SOL» — удержание законное и совпадает.
+- Asset Flows: «The Summary… includes the asset, principal amount, fee, final amount…».
+- Справочник `GET /v1/chain/flows/{flow_id}`: «amountE18 — Gross principal amount for the flow…
+  Request fees are exposed separately in request_fee»; «requestFee — Request-scoped fee details
+  when a fee applies and should be visible for the current step».
 
 **Масштаб** (все завершённые депозиты сети через `ListFlows` + `GetFlowById`, 28.09 ~16:40 UTC):
 
@@ -133,6 +160,8 @@ m={txs:11124982,tps:123922};
 ```
 Что видит пользователь (текст страницы в браузере, 15:56 UTC):
 `TVL (Polyester Exchange) $0.00 0.00% (24h)` · `Total Txns (Polyester Exchange) 11,124,982 123,922 (TPS)`.
+
+**Документация** (Polyester Scan → Overview): «The home page also shows live activity and network summaries».
 
 **Ожидалось:** живые данные из API (или скрытые карточки, пока данных нет).
 
@@ -177,6 +206,16 @@ m={txs:11124982,tps:123922};
 ```
 HTTP 404 {"detail":"lifecycle flow not found","code":"not_found",…}
 ```
+
+Правильный адрес существует и отвечает: `GET https://api.testnet.polyester.com/v1/chain/flows/flow_4xW7RUSVcPK`
+→ `200 application/json` (28.09 16:36 UTC).
+
+**Документация** (Contracts & Tools): «The API button on a supported page shows the exact read URL
+used by the current environment».
+
+**Связь с отправленным:** это тот же устаревший адрес альфы, что в доках Python SDK
+(отправлено 25.09, ответ «noted, we are on it») — подавать как дополнение («the same alpha
+host also shows up in Scan's API button»), не как новую тему.
 
 **Ожидалось:** адрес API тестнета (сайт — `testnet`, его API — `api.testnet.polyester.com`).
 
@@ -227,6 +266,20 @@ GET https://scan.polyester.live/api/v2/blocks?type=block&block_number=2966004&it
 Так же `/block/-5`, `/address/0xZZ` → 200. Мелочь («мягкая 404»).
 
 ---
+
+# Дополнения к отправленному
+
+## tsSec в миллисекундах — и на обозревателе тоже
+
+28.09 команде уже отправлено: в MCP `get_spot_markets` поле `tsSec` в миллисекундах, а в REST — в секундах.
+То же значение в миллисекундах сервер обозревателя встраивает в HTML каждой страницы (конфиг рынков):
+```
+28.09 16:36:53 UTC  GET https://testnet.polyesterscan.com/  -> ...],tsSec:1790613412000}
+28.09 16:36:54 UTC  POST https://api.testnet.polyester.com/marketdata.v1.MarketDataService/GetSpotConfig {}
+                    -> application/json, "tsSec": 1790613414
+```
+Видимо, один источник у MCP и обозревателя. Видимых последствий на страницах не нашёл, поэтому
+только как дополнение к уже отправленному, не отдельная находка. (В копии доков от 10.09 то же: `tsSec:1789038188000`.)
 
 # Наблюдения — не подтверждены или не воспроизводятся сейчас
 
