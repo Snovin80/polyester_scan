@@ -1,7 +1,7 @@
 # Находки: Polyester Scan testnet
 
 Проверено 28.09.2026, 15:40–16:40 UTC, живыми запросами из облачной среды.
-Основные находки 1–5, 7–12 повторяет `python3 scan_probe.py` (п. 5 — только если застанет отставание счётчика).
+Основные находки 1–5, 7–13 повторяет `python3 scan_probe.py` (п. 5 — только если застанет отставание счётчика).
 
 Документация: живые `testnet.polyester.com/docs/...` из облака закрыты Cloudflare, поэтому
 цитаты — из сохранённой автором копии от 10.09 (`docs/snapshot_2026-09-10/`, тогда доки были на
@@ -154,6 +154,15 @@ GET https://api.testnet.polyester.com/v1/chain/flows/flow_W7ZGpHHftaT -> 200, su
 
 
 **Проверено с домашнего ПК автора (28.09 ~16:55 UTC):** страница депозита tXRP — «2 tXRP Deposit», «Network Fee None», «Credited Amount 1.8 tXRP».
+
+
+**Комиссия есть в блокчейне — теряет её только API** (28.09 ~17:40 UTC, Blockscout, логи tx шага REQUEST):
+```
+flow_4xW7RUSVcPK (tXRP, в API requestFee нет): tx 0x5ca047996bfcaf2331456361210fe45f55015b18aa6e98601448806c3799955f
+  DepositFeeLocked {requestId: 9584, chainId: 9, feeZAmount: 200000000000000000, feeRecipient: 0x4990534d6BFE03c17CaaD010931b467Cd5FBEC3F}
+flow_SMQSpzMh1NM (tSOL, в API requestFee нет): DepositFeeLocked feeZAmount = 0.001 SOL; в tx чеканки: 0.001 -> 0x4990…, 0.009 -> пользователю
+```
+Для сравнения: у 18 депозитов из 10 других сетей `requestFee` в API = `DepositFeeLocked` в блокчейне = чеканка получателю комиссий.
 
 ---
 
@@ -328,6 +337,39 @@ understandable record»; «Transaction links take you to the public record for t
 на чеканку/проверку, а у операций «только SETTLEMENT» сумма депозита и комиссия показаны неверно
 (principal = уже зачисленная сумма). С пропажей комиссии (п. 3) не связано: у SOL 24 полных операции тоже без `requestFee`.
 
+
+**Дополнительно (28.09 ~17:30–17:45 UTC):**
+
+*Крайний случай — операция «висит» 4,7 суток, хотя в блокчейне прошла за 10 секунд.* `flow_6DSDcV3jmMw`
+(0.002 ETH из Sepolia, единственная открытая операция в API): `currentStep FLOW_STEP_SOURCE`, `isOpen true`,
+`lifecycleReason/zipperReason` пустые, `startedAt 2026-09-24 00:21:52 UTC`. В Sepolia tx `0x8c3d3af9…f7a0` — блок 11768401
+(00:22:00 UTC), 0.002 ETH на адрес депозита. В сети Polyester: tx `0x1f7e991e…4ae5` (00:22:07, success) —
+`RequestDepositCreated requestId 6099`, `DepositFeeLocked 0.0001`; tx `0x1b1125c2…` (00:22:10) — чеканка 0.0001 получателю
+комиссий и 0.0019 → перевод на `0x57D15F…` (Polyester Funding). Обозреватель показывает «ожидает» уже почти 5 суток.
+
+*Голоса валидаторов теряются так же.* У 25 обрезанных депозитов в шаге VALIDATION `approveCount` меньше `requiredApprovals`
+(например `flow_4xW7RUSVcPK`: 1 из 3). В блокчейне по запросу 9584 — 4 одобрения от 4 разных отправителей
+(`validateRequestsBySig`, 16:09:51–16:09:52 UTC, tx `0x25a9f823…`, `0x96da723f…`, `0xfe3447a9…`, `0x5531c34c…`).
+То есть мост проверил правильно, API записал только первый голос. Угрозы безопасности нет — это потеря данных.
+
+*«0 подтверждений» — тоже только запись.* У 29 обрезанных депозитов в шаге SOURCE `currentConfirmations 0` при нужном 1.
+Проверка на примере `flow_ab1QeSbCqcE`: исходная tx попала в блок Sepolia 11801768 в 16:39:36 UTC, запрос в Polyester —
+16:39:48 UTC, т.е. после подтверждения. Зачисления раньше подтверждения нет.
+
+---
+
+## 13. (мелочь) Статистика: «сервис недоступен» вместо «неверный параметр», нет ограничения диапазона
+
+**Запросы → сырые ответы** (28.09 ~17:25 UTC, прокси статистики сайта):
+```
+GET /api/stats/lines/newTxns?from=2026-09-20&to=2026-09-27&resolution=HOURX -> 400 {"error":"Stats service temporarily unavailable"}
+GET /api/stats/lines/noSuchChart?from=2026-09-20&to=2026-09-27&resolution=DAY -> 404 {"error":"Stats service temporarily unavailable"}
+GET /api/stats/lines/newTxns?from=1900-01-01&to=2999-12-31&resolution=DAY   -> 200, 2 638 885 байт (точки с 1900-01-01, значения 0)
+```
+**Ожидалось:** сообщение о неверном параметре; разумный предел диапазона.
+**Почему ошибка:** текст вводит в заблуждение (сервис работает), а один запрос без предела отдаёт 2,6 МБ.
+Запрос с большим диапазоном сделан один раз, не повторял. Мелочь.
+
 ---
 
 # Дополнения к отправленному
@@ -364,6 +406,20 @@ understandable record»; «Transaction links take you to the public record for t
   блоки и транзакции обновляются вживую, «Error» нет. Из облака мешала среда (прокси).
 
 # Что проверено и в порядке
+
+Сверка трёх источников (28.09 ~17:15–17:45 UTC, снимок 300 депозитов + 200 выводов + 100 переводов, `flow_audit.py collect`):
+- **Сумма депозита = сумма в исходной сети** — 6 сетей из 6: BTC (mempool, vout), Sepolia (RPC, value), Solana devnet
+  (getTransaction, лампорты), LTC (litecoinspace), XRP (testnet.xrpl-labs.com, 2 000 000 drops), Tron Nile (trongrid, sun).
+- **Начеканено = сумма − комиссия, комиссия = `DepositFeeLocked` = чеканка получателю** — 20 депозитов из 11 сетей.
+  (Пакетные tx чеканят за несколько депозитов — сверял по конкретной сумме нужного токена.)
+- Дублей по исходному хэшу нет (500 операций); Settlement Ref уникальны (500); порядок времени шагов соблюдён.
+- Сайт показывает большие суммы (U128 с `hi`) верно: `flow_eZEWrVjnqed` — «1,000 tTRX», комиссия 1.5, зачислено 998.5.
+- Отражение ввода безопасно: поиск (страница и окно в шапке), `/flow/…`, `/tx/…` и др. выводят `<b>…</b>` текстом.
+- Ссылки «Explorer» на странице сети (`/supported-chain/{id}`, вкладка Info) — тестовые (с `?cluster=devnet`, `/testnet`).
+- Исходники (source maps) закрыты (404); `/showroom/*` — «Error 404» на экране (мягкая 404, как п. 10);
+  `/external/*` — только картинки логотипов; `check-redirect` на внешний адрес не уводит.
+- Статистика на будущие даты не выдумывает точки: заканчивается сегодняшним днём с `is_approximate: true`.
+
 
 - Поиск: пустой, кривой хэш, адрес Bitcoin/Solana (чужие сети), 1000/3000 символов — 200 и пусто, без 500.
 - `/api/v2/transactions/0x1234` → 422, нулевой хэш → 404, `/api/v2/addresses/0xZZ` → 422.
