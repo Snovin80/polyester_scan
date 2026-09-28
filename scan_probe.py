@@ -649,27 +649,42 @@ def checks_api(ctx):
                 report("ОК" if on_dev and not on_main else "ОШИБКА", g, f"подпись {src[:12]}… в сети Solana",
                        f"devnet={on_dev}, mainnet={on_main}")
 
-    # Комиссия: сумма уменьшилась между первым и последним шагом, а комиссии в ответе нет
-    fee_bad, fee_ok = [], 0
-    dep = rjson(rpc_call(LF, {"limit": 20, "flowKind": "KIND_DEPOSIT", "scope": "LIST_TERMINAL_ONLY"})) or {}
-    for f in dep.get("flows", [])[:10]:
-        d = rjson(rpc_call("chain.lifecycle.v1.LifecycleReadService/GetFlowById", {"flowId": f["flowId"]})) or {}
-        fw = d.get("flow") or {}
-        steps = [s for s in fw.get("observedSteps", []) if s.get("amountE18")]
-        if len(steps) < 2:
+    # Комиссия за ввод: у каждой сети есть networkFee (в конфиге), биржа его удерживает.
+    # Проверяем, что API указывает удержание (requestFee) — иначе сайт пишет «Network Fee: None».
+    dep, tok = [], ""
+    for _ in range(2):
+        body = {"limit": 100, "flowKind": "KIND_DEPOSIT", "scope": "LIST_TERMINAL_ONLY"}
+        if tok:
+            body["pageToken"] = tok
+        d = rjson(rpc_call(LF, body)) or {}
+        dep += d.get("flows", [])
+        tok = d.get("nextPageToken")
+        if not tok:
+            break
+    if not dep:
+        report("НЕТ ДАННЫХ", g, "депозиты: комиссия", "завершённых депозитов нет")
+        return
+    by_chain = {}
+    for f in dep:
+        by_chain.setdefault(f.get("polyesterChainId"), []).append(f)
+    good = []
+    for cid, fs in sorted(by_chain.items(), key=lambda x: str(x[0])):
+        name = (chains.get(cid) or {}).get("code", f"chain {cid}")
+        missing = [f for f in fs if not f.get("requestFee")]
+        if not missing:
+            good.append(f"{name} {len(fs)}")
             continue
-        a0, a1 = u128(steps[0]["amountE18"]), u128(steps[-1]["amountE18"])
-        fee = (fw.get("summary") or {}).get("requestFee")
-        if a1 < a0 and not fee:
-            fee_bad.append(f'{f["flowId"]}: {Decimal(a0) / 10**18} → {Decimal(a1) / 10**18}, requestFee нет')
-        else:
-            fee_ok += 1
-    if fee_bad or fee_ok:
-        report("ОШИБКА" if fee_bad else "ОК", g, "депозиты: удержание суммы без поля комиссии",
-               f"{len(fee_bad)} из {len(fee_bad) + fee_ok}", "; ".join(fee_bad[:3]) if fee_bad else None)
-    else:
-        report("НЕТ ДАННЫХ", g, "депозиты: удержание суммы", "завершённых депозитов в выборке нет")
-
+        examples = []
+        for f in missing[:2]:
+            fw = (rjson(rpc_call("chain.lifecycle.v1.LifecycleReadService/GetFlowById", {"flowId": f["flowId"]})) or {}).get("flow") or {}
+            steps = [s for s in fw.get("observedSteps", []) if s.get("amountE18")]
+            if len(steps) >= 2:
+                a0, a1 = u128(steps[0]["amountE18"]), u128(steps[-1]["amountE18"])
+                examples.append(f'{f["flowId"]}: {Decimal(a0) / 10**18:f} → {Decimal(a1) / 10**18:f}')
+        report("ОШИБКА", g, f"депозиты {name}: нет поля комиссии (requestFee)",
+               f"{len(missing)} из {len(fs)} — сайт покажет «Network Fee: None»",
+               "удержание по шагам: " + "; ".join(examples))
+    report("ОК", g, "депозиты: комиссия указана", ", ".join(good) if good else "—")
 
 def main():
     global SAVE_DIR

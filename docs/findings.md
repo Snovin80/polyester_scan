@@ -71,31 +71,53 @@ mainnet [None, None, None]
 
 ---
 
-## 3. «Network Fee: None», а сумма уменьшилась на размер комиссии
+## 3. Депозиты XRP и Solana: комиссия удержана, но на обозревателе «Network Fee: None»
+
+Сама комиссия за ввод законная: биржа её объявляет (в окне депозита «Deposit fee 0.00002 BTC»,
+в истории депозитов «Fee applied 0.0001 tETH»), размер берётся из `networkFee` в конфиге сети.
+Для большинства сетей обозреватель показывает её правильно. Например, депозит tETH из Sepolia
+`/flow/flow_W7ZGpHHftaT`: `Principal Amount 0.5 tETH · Network Fee 0.0001 tETH · Credited Amount 0.4999 tETH`,
+в API заполнено `requestFee: {amountE18: {lo: "100000000000000"}, status: "REQUEST_FEE_STATUS_SETTLED"}`.
+
+**Ошибка — только у XRP (ripple-testnet) и Solana (solana-devnet):** в большинстве депозитов
+API не отдаёт `requestFee`, и обозреватель пишет «None», хотя сумма уменьшилась ровно на комиссию.
 
 **Запрос:** `POST https://api.testnet.polyester.com/chain.lifecycle.v1.LifecycleReadService/GetFlowById`
-`{"flowId":"flow_4xW7RUSVcPK"}` (депозит tXRP из ripple-testnet).
+`{"flowId":"flow_4xW7RUSVcPK"}` (депозит tXRP).
 
 **Сырой ответ (сокращено):**
 ```
 summary: flowKind=KIND_DEPOSIT, polyesterChainId=9, amountE18={"lo":"2000000000000000000"}, requestFee=<нет поля>
 FLOW_STEP_SOURCE     amountE18.lo = 2000000000000000000
-FLOW_STEP_REQUEST    amountE18.lo = 2000000000000000000
 FLOW_STEP_VALIDATION amountE18.lo = 2000000000000000000
 FLOW_STEP_TRANSFER   amountE18.lo = 1800000000000000000
 FLOW_STEP_SETTLEMENT amountE18.lo = 1800000000000000000
 ```
 Страница `/flow/flow_4xW7RUSVcPK`: `Principal Amount 2 tXRP … Network Fee None Credited Amount 1.8 tXRP`.
-Конфиг сети (HTML): `code:"ripple-testnet" … zippedAssetId:14, isNativeAsset:true, networkFee:"0.2"`.
+Конфиг: `code:"ripple-testnet" … zippedAssetId:14, isNativeAsset:true, networkFee:"0.2"`.
+Solana: `/flow/flow_SMQSpzMh1NM` — 0.01 → 0.009 tSOL, `Network Fee None`, в конфиге `networkFee:"0.001"`.
 
-То же у Solana: `flow_SMQSpzMh1NM` — 0.01 → 0.009 tSOL, `Network Fee None`, в конфиге `networkFee:"0.001"`.
+**Масштаб** (все завершённые депозиты сети через `ListFlows` + `GetFlowById`, 28.09 ~16:40 UTC):
 
-**Ожидалось:** в операции указана удержанная комиссия (0.2 tXRP = 10% депозита), сумма сходится.
+| Сеть | Без `requestFee` | С `requestFee` |
+|---|---|---|
+| ripple-testnet (XRP) | 32 из 50 | 18 |
+| solana-devnet (SOL) | 28 из 32 | 4 |
+| остальные 9 сетей, попавшие в последние 300 депозитов (ETH и токены на Sepolia, BTC, LTC, BSC, AVAX, Base, Arbitrum, Robinhood, Tron) | 0 | все 288 |
 
-**Почему ошибка:** пользователь видит «комиссии нет», но получает меньше.
-Удержание при этом ровно равно `networkFee` из конфига. API не заполняет `requestFee`
-(поле есть в схеме `FlowSummaryView.request_fee = 28`), а сайт показывает «None».
-Скрипт находит 1 такой среди 10 последних завершённых депозитов (16:20 UTC).
+Бывает вперемешку даже в одной сети: tXRP `flow_L58gDDcfYLi` (10:01) — комиссия 0.2 указана,
+`flow_Hn4y1vxZXYo` (11:40) — нет, при одинаковом удержании 2 → 1.8.
+
+**Ожидалось:** у каждого депозита с удержанием указана комиссия, как у tETH:
+«Principal − Network Fee = Credited».
+
+**Почему ошибка:** на странице XRP/SOL-депозита не сходится арифметика: пришло 2, комиссии нет, зачислено 1.8.
+Пользователь не видит, куда ушли 10% (у XRP комиссия 0.2 при минимальном депозите 2).
+Похоже, при обработке этих сетей не всегда записывается `requestFee` (**не проверено**, на какой стороне ошибка).
+Показывает ли биржа «Fee applied» для таких депозитов в истории — **не проверено** (нужен вход в аккаунт).
+
+**Попутно, не разбирал:** в части депозитов XRP/SOL сумма на первом шаге уже «чистая»
+(`1.8 → 1.8`, `0.009 → 0.009`), иногда при этом `requestFee` = 0.2 указан (`flow_cVCVUjgoM8a`).
 
 ---
 
