@@ -1,7 +1,7 @@
 # Находки: Polyester Scan testnet
 
 Проверено 28.09.2026, 15:40–16:40 UTC, живыми запросами из облачной среды.
-Основные находки 1–5, 7–13 повторяет `python3 scan_probe.py` (п. 5 — только если застанет отставание счётчика).
+Основные находки 1–5, 7–15 повторяет `python3 scan_probe.py` (п. 5 — только если застанет отставание счётчика).
 
 Документация: живые `testnet.polyester.com/docs/...` из облака закрыты Cloudflare, поэтому
 цитаты — из сохранённой автором копии от 10.09 (`docs/snapshot_2026-09-10/`, тогда доки были на
@@ -87,6 +87,12 @@ open the related account, Zipped Asset, Unified Asset, or source chain directly 
 
 
 **Проверено с домашнего ПК автора (28.09 ~16:55 UTC):** ↗ у «Source Chain: Solana Devnet» на `/flow/flow_SMQSpzMh1NM` открывает главную `solscan.io` основной сети (цена SOL, статистика mainnet, переключателя DEVNET нет).
+
+
+**И на выводах** (28.09 ~18:00 UTC, HTML страниц, по одному выводу на сеть): ссылка «сеть назначения» ведёт на главную
+основной сети — `flow_Jhj4Cp6a5ka` (BTC) → `https://mempool.space`, `flow_7uxDcJAdSxB` (SOL) → `https://solscan.io`,
+`flow_cjFdKZYSooo` (LTC) → `https://litecoinspace.org`. У остальных 9 сетей с операциями (Sepolia, Base, Arbitrum, BSC, XRP,
+Fuji, Robinhood, Tron) ссылки ведут в тестовые сети. На странице самой сети (`/supported-chain/{id}`, вкладка Info) ссылка верная.
 
 ---
 
@@ -379,6 +385,12 @@ understandable record»; «Transaction links take you to the public record for t
 Проверка на примере `flow_ab1QeSbCqcE`: исходная tx попала в блок Sepolia 11801768 в 16:39:36 UTC, запрос в Polyester —
 16:39:48 UTC, т.е. после подтверждения. Зачисления раньше подтверждения нет.
 
+
+*Видимое последствие — «депозиты ниже минимума».* Все 6 депозитов в снимке, у которых сумма меньше минимума
+(`flow_D4HPuApD2Sk` 0.009 SOL при минимуме 0.01, `flow_7AUkiS98hSn` 1.8 XRP при 2, `flow_QrMqppQ9Ctc` 0.00028 ETH при 0.0003…),
+— операции «только SETTLEMENT», и у всех «сумма + комиссия» = ровно минимум. То есть пришла нормальная сумма, а обозреватель
+показывает уже зачисленную и она выглядит как депозит ниже минимума (по докам такие «will be lost»).
+
 ---
 
 ## 13. (мелочь) Статистика: «сервис недоступен» вместо «неверный параметр», нет ограничения диапазона
@@ -392,6 +404,43 @@ GET /api/stats/lines/newTxns?from=1900-01-01&to=2999-12-31&resolution=DAY   -> 2
 **Ожидалось:** сообщение о неверном параметре; разумный предел диапазона.
 **Почему ошибка:** текст вводит в заблуждение (сервис работает), а один запрос без предела отдаёт 2,6 МБ.
 Запрос с большим диапазоном сделан один раз, не повторял. Мелочь.
+
+---
+
+## 14. У выводов нет ссылки на транзакцию доставки — обозреватель её не отслеживает
+
+**Где:** страница вывода и API операций.
+
+**Сырые данные** (снимок 28.09 ~17:15 UTC, 200 завершённых выводов, `GetFlowById`):
+```
+источники записей во всех шагах и событиях выводов: SOURCE_POLYESTER_CHAIN 1781, SOURCE_LEDGER 290, SOURCE_RELAYER 0
+для сравнения депозиты:                             SOURCE_RELAYER 282 (наблюдение внешней сети), POLYESTER_CHAIN 708, LEDGER 300
+```
+Пример `flow_WmsSrDpe1Ng` (100 USDC → Sepolia): в ответе API нет хэша доставки `0xc9473e80…f705`, хотя он записан в сети
+Polyester (`commitWithdrawTxHash` / событие `WithdrawTxHashCommitted {requestId: 9601, destinationHashTx: 0xc9473e80…}`),
+а в Sepolia эта tx есть (status 1, 99.6 USDC на адрес получателя). На страницах выводов всех 9 сетей с операциями —
+0 ссылок на транзакции во внешней сети (только адрес и сеть); у депозитов ссылка на исходную tx есть.
+
+**Документация** (Asset Flows): «The Journey shows how the movement progressed… it can include: source-chain confirmations;
+Zipper validator approval; a Zipped Asset mint or burn; a Funding or Trading balance update; and destination-chain delivery»;
+«Transaction links take you to the public record for that stage. External-chain links open the relevant network explorer».
+
+**Почему ошибка:** пользователь не может открыть транзакцию, которой получил деньги, и проверить доставку; вывод
+помечается «Completed» по событию в сети Polyester, а не по факту в сети назначения.
+
+---
+
+## 15. (мелочь) Поиск операции по хэшу: EVM без учёта регистра, BTC и XRP — с учётом
+
+**Запросы** `ListFlowsByTx {"txHash": …, "lookupKind": "TX_LOOKUP_KIND_ANY"}` (28.09 ~17:55 UTC):
+```
+0xfb353d95…6deb (EVM, строчные)  -> flow_ab1QeSbCqcE      0xFB353D95…6DEB (заглавные) -> flow_ab1QeSbCqcE
+fbad40756ea8… (BTC, как в сети)  -> flow_frT2okTWCsw      FBAD40756EA8… (заглавные)   -> []
+D0B960EF4BC2… (XRP, как в сети)  -> flow_4xW7RUSVcPK      d0b960ef4bc2… (строчные)    -> []
+45bQAAfmzUhj… (Solana)           -> flow_SMQSpzMh1NM      45bqaafmzuhj… (строчные)    -> []  (верно: base58)
+```
+**Почему ошибка:** хэши BTC и XRP шестнадцатеричные, регистр в них не значим; для EVM API это учитывает, для BTC/XRP — нет.
+Хэш XRP в нижнем регистре сайт сам выдаёт в ссылке шага (п. 1). Сайт при поиске регистр не меняет (проверено в браузере). Мелочь.
 
 ---
 
@@ -441,6 +490,14 @@ GET /api/stats/lines/newTxns?from=1900-01-01&to=2999-12-31&resolution=DAY   -> 2
 - Ссылки «Explorer» на странице сети (`/supported-chain/{id}`, вкладка Info) — тестовые (с `?cluster=devnet`, `/testnet`).
 - Исходники (source maps) закрыты (404); `/showroom/*` — «Error 404» на экране (мягкая 404, как п. 10);
   `/external/*` — только картинки логотипов; `check-redirect` на внешний адрес не уводит.
+- Выводы доставлены: `flow_czSz3FJSxo8` — 0.004 AVAX на Fuji, `flow_WmsSrDpe1Ng` — 99.6 USDC на Sepolia, на адреса из API.
+- Список (`ListFlows`) = карточка (`GetFlowById`) у всех 500 операций; REST = RPC (6 из 6).
+- Зачисления раньше подтверждения нет; голоса валидаторов в сети — 4 из 4 при нужных 3 (п. 12 — только запись).
+- Обеспечение: необходимое условие выполнено (выпуск исходных токенов в Sepolia ≥ выпуску в Polyester, 15 маршрутов).
+  Полное 1:1 **не проверено** — адреса хранилищ неизвестны (в кошельках выводов 2–4 % выпуска).
+- Приватность: показ аккаунта у операций и публичный фильтр `ownerAccountId` описаны в доках (Asset Flows, справочник) —
+  так задумано.
+- Поиск сайта передаёт хэш как введён (без `toLowerCase`) — ошибки п. 1 в поиске нет.
 - Статистика на будущие даты не выдумывает точки: заканчивается сегодняшним днём с `is_approximate: true`.
 
 
