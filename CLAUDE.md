@@ -59,3 +59,5 @@
   отчётов. ЦЕЛИКОМ НЕ ЧИТАТЬ — искать grep'ом по слову.
 - `report-style-polyester.md`, `polyester-text-checklist.md`,
   `polyester-discord-no-urls.md` — правила текстов для команды.
+- `docs/snapshot_2026-09-10/` — сохранённые доки Polyester от 10.09 (API,
+  developer, user, Python SDK; файлы по 1–3,6 МБ — искать grep'ом).
