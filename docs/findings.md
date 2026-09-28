@@ -322,9 +322,8 @@ GET https://scan.polyester.live/api/v2/blocks?type=block&block_number=2966004&it
 - **Название «Solana Testnet (tSOL)»** на странице операции (`Token: Solana Testnet (tSOL)`),
   хотя сеть — `Solana Devnet`. У Solana есть и отдельная сеть «testnet», так что название может
   запутать. Мелочь, на усмотрение.
-- **Из облачных IP страница «Flows» не грузится:** в headless Chromium `ListFlows` блокируется
-  Cloudflare на предварительном запросе (CORS preflight → 403), сайт пишет «Could not load flows».
-  **Проверить с домашнего ПК.**
+- ~~Страница «Flows» не грузится~~ — **не ошибка**: у автора дома (28.09 ~17:00 UTC) таблица операций есть,
+  «Showing the Latest 25 Flows». Из облака мешал Cloudflare (CORS preflight → 403).
 - ~~Вебсокеты и красные «Error» на главной~~ — **не ошибка**: с домашнего ПК автора (28.09 ~16:46 UTC)
   блоки и транзакции обновляются вживую, «Error» нет. Из облака мешала среда (прокси).
 
