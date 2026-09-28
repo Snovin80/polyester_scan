@@ -45,6 +45,9 @@ record for that stage. External-chain links open the relevant network explorer»
 Та же функция переводит в нижний регистр хэши XRP (в API они в верхнем: `D0B960EF…`) —
 принимает ли такие `testnet.xrpl.org`, **не проверено**.
 
+
+**Проверено с домашнего ПК автора (28.09 ~16:55 UTC, Chrome):** ссылка шага «Deposit Seen» открывает Solscan (DEVNET), транзакция не загружается (серые заглушки); ссылка «Source Tx» — транзакция найдена: 0.01 SOL, 11:33:02 UTC, SUCCESS.
+
 ---
 
 ## 2. Ссылки «сеть» и «нативный токен» ведут в основную сеть (Solana, Bitcoin, Litecoin)
@@ -81,6 +84,9 @@ open the related account, Zipped Asset, Unified Asset, or source chain directly 
 **Что в порядке (важно для отчёта):** ссылки на **транзакции и адреса** Solana содержат
 `?cluster=devnet` и работают (`Source Tx`, `Sender Address`, `Deposit Address`). Подозрение
 из CLAUDE.md «у Solana основной solscan.io» подтвердилось только для ссылок «сеть/токен».
+
+
+**Проверено с домашнего ПК автора (28.09 ~16:55 UTC):** ↗ у «Source Chain: Solana Devnet» на `/flow/flow_SMQSpzMh1NM` открывает главную `solscan.io` основной сети (цена SOL, статистика mainnet, переключателя DEVNET нет).
 
 ---
 
@@ -146,6 +152,9 @@ GET https://api.testnet.polyester.com/v1/chain/flows/flow_W7ZGpHHftaT -> 200, su
 **Попутно, не разбирал:** в части депозитов XRP/SOL сумма на первом шаге уже «чистая»
 (`1.8 → 1.8`, `0.009 → 0.009`), иногда при этом `requestFee` = 0.2 указан (`flow_cVCVUjgoM8a`).
 
+
+**Проверено с домашнего ПК автора (28.09 ~16:55 UTC):** страница депозита tXRP — «2 tXRP Deposit», «Network Fee None», «Credited Amount 1.8 tXRP».
+
 ---
 
 ## 4. Главная: «Total Txns / TPS / TVL (Polyester Exchange)» — числа зашиты в код
@@ -167,6 +176,9 @@ m={txs:11124982,tps:123922};
 
 **Почему ошибка:** это заглушки: они не меняются, TVL всегда $0, а «123 922 TPS» неправдоподобно
 (в сети Polyester ~9 000 tx в сутки по `/api/v2/stats/charts/transactions`).
+
+
+**Проверено с домашнего ПК автора (28.09 ~16:46 UTC):** на главной «TVL $0.00 0.00% (24h)», «11,124,982 · 123,922 (TPS)».
 
 ---
 
@@ -235,6 +247,9 @@ GET https://scan.polyester.live/api/v2/blocks?type=block&block_number=2966004&it
 **Почему ошибка:** необработанное переполнение/разбор числа — ошибка сервера вместо ответа
 «неверный параметр». Мелко; скорее всего поведение самого Blockscout (не проверено).
 
+
+**Проверено с домашнего ПК автора (28.09 ~16:55 UTC):** `scan.polyester.live/api/v2/blocks/99999999999999999999` в браузере → `"Internal server error"`.
+
 ---
 
 ## 8. `total_gas_used: "0"`, хотя за сегодня газ есть
@@ -273,6 +288,9 @@ GET https://scan.polyester.live/api/v2/blocks?type=block&block_number=2966004&it
 **Ожидалось:** 404, как у `/dev/og-images`; служебные страницы не выкладывают на публичный сайт.
 **Почему ошибка:** любой посетитель может слать тестовые исключения в их Sentry (шум в мониторинге,
 расход квоты). Кнопку не нажимал. Мелочь, но показательная.
+
+
+**Проверено с домашнего ПК автора (28.09 ~16:55 UTC):** страница открывается («Development · Client Sentry Test»), кнопку не нажимали.
 
 ---
 
