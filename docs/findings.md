@@ -1,14 +1,14 @@
 # Находки: Polyester Scan testnet
 
 Проверено 28.09.2026, 15:40–16:40 UTC, живыми запросами из облачной среды.
-Основные находки 1–11 повторяет `python3 scan_probe.py` (п. 5 — только если застанет отставание счётчика).
+Основные находки 1–5, 7–11 повторяет `python3 scan_probe.py` (п. 5 — только если застанет отставание счётчика).
 
 Документация: живые `testnet.polyester.com/docs/...` из облака закрыты Cloudflare, поэтому
 цитаты — из сохранённой автором копии от 10.09 (`docs/snapshot_2026-09-10/`, тогда доки были на
 `testing.polyester.com`). Перед отправкой команде сверить формулировки с текущими доками.
 
 Уже отправлено команде (по `docs/bot/CLAUDE_bot.md` и журналу): про обозреватель — ничего.
-Родственное: адрес альфы `api-devnet.polyester.ai` в доках SDK (25.09) — см. п. 6;
+Родственное: адрес альфы `api-devnet.polyester.ai` в доках SDK (25.09) — см. п. 6 (понижен);
 `tsSec` в миллисекундах в MCP (28.09) — см. раздел «Дополнения к отправленному».
 
 Порядок — от важного к мелочам.
@@ -199,32 +199,24 @@ m={txs:11124982,tps:123922};
 
 ---
 
-## 6. Панель «API» у операции ведёт в API сети devnet
+## 6. (ПОНИЖЕНО 28.09 16:55) Адрес альфы devnet зашит для кнопки «API», но кнопки на сайте нет
 
-**Где:** страница операции → блок с сырыми данными «Lifecycle flow detail».
+**Что в коде:** бандлы `nodes/30.OrT0EK6-.js` и `nodes/31.yBWar82L.js` — для страницы шага расчёта
+готовится `endpoint: https://api-devnet.polyester.ai/v1/chain/flows/${flowId}`. Этот адрес devnet
+тестнет-операцию не знает: `GET https://api-devnet.polyester.ai/v1/chain/flows/flow_SMQSpzMh1NM` →
+`404 {"detail":"lifecycle flow not found","code":"not_found",…}`. Правильный адрес есть:
+`GET https://api.testnet.polyester.com/v1/chain/flows/flow_4xW7RUSVcPK` → `200 application/json` (16:36 UTC).
 
-**Запрос:** бандлы `nodes/30.OrT0EK6-.js` и `nodes/31.yBWar82L.js`.
-**Сырой ответ:** `endpoint: https://api-devnet.polyester.ai/v1/chain/flows/${flowId}`
+**Почему понижено:** компонент кнопки «API» в этой сборке пустой (`chunks/DWDKMQYN.js`:
+`function Hn(t,n){…c(()=>Ee.currentNetworkConfig.apiBase);var r=e(),i=g(r);u(i,e=>{}),m(t,r),b()}` —
+ничего не рисует). В браузере на `/tx/207834882979839228429806718939153843491?flow=flow_SMQSpzMh1NM`
+(страница шага расчёта) кнопки «API» нет — только вкладка «Overview». Пользователь неверный адрес
+сейчас не видит. Проверено только в коде — поэтому не ошибка, а наблюдение.
 
-Проверка: `GET https://api-devnet.polyester.ai/v1/chain/flows/flow_SMQSpzMh1NM` (тестнет-операция) →
-```
-HTTP 404 {"detail":"lifecycle flow not found","code":"not_found",…}
-```
-
-Правильный адрес существует и отвечает: `GET https://api.testnet.polyester.com/v1/chain/flows/flow_4xW7RUSVcPK`
-→ `200 application/json` (28.09 16:36 UTC).
-
-**Документация** (Contracts & Tools): «The API button on a supported page shows the exact read URL
-used by the current environment».
-
-**Связь с отправленным:** это тот же устаревший адрес альфы, что в доках Python SDK
-(отправлено 25.09, ответ «noted, we are on it») — подавать как дополнение («the same alpha
-host also shows up in Scan's API button»), не как новую тему.
-
-**Ожидалось:** адрес API тестнета (сайт — `testnet`, его API — `api.testnet.polyester.com`).
-
-**Почему ошибка:** адрес захардкожен на devnet и другой домен (`polyester.ai`). Показанная
-пользователю ссылка на «API» для тестнет-операции отдаёт 404.
+**Что всё же можно сказать:** доки (Contracts & Tools) описывают «The API button on a supported page
+shows the exact read URL used by the current environment» — кнопки на страницах нет; а если её
+включат как есть, для расчётов покажет адрес альфы (родственно тикету 25.09 про адрес альфы в доках SDK).
+Слабый пункт; в отчёт — разве что одной строкой как дополнение к тикету 25.09.
 
 ---
 

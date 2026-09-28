@@ -2,7 +2,7 @@
 """Проверки обозревателя Polyester Scan (testnet) и его API.
 
 Только публичные запросы, только стандартная библиотека Python.
-Вывод: по строке на проверку — ОК / ОШИБКА / БЛОК (закрыто Cloudflare) / НЕТ ДАННЫХ.
+Вывод: по строке на проверку — ОК / ОШИБКА / ИНФО (только по коду, не видно на сайте) / БЛОК (закрыто Cloudflare) / НЕТ ДАННЫХ.
 При ошибке ниже печатается сырой ответ сервера (обрезан).
 
 Запуск:
@@ -38,7 +38,7 @@ RAW_LIMIT = 400      # сколько символов сырого ответа
 UA = "polyester-scan-probe/0.1 (+public testnet checks)"
 
 SAVE_DIR = None
-COUNTS = {"ОК": 0, "ОШИБКА": 0, "БЛОК": 0, "НЕТ ДАННЫХ": 0}
+COUNTS = {"ОК": 0, "ОШИБКА": 0, "ИНФО": 0, "БЛОК": 0, "НЕТ ДАННЫХ": 0}
 
 
 # ---- HTTP -----------------------------------------------------------------
@@ -122,7 +122,7 @@ def report(status, group, title, note="", raw=None):
     if note:
         line += f" — {note}"
     print(line)
-    if raw is not None and status in ("ОШИБКА", "БЛОК"):
+    if raw is not None and status in ("ОШИБКА", "БЛОК", "ИНФО"):
         if isinstance(raw, Resp):
             raw = f"{raw.url} -> HTTP {raw.status}: {raw.body}"
         raw = " ".join(str(raw).split())
@@ -266,7 +266,7 @@ def checks_site(ctx):
         report("ОК", g, "главная: «Total Txns / TPS / TVL (Polyester Exchange)»", "зашитых чисел не нашёл")
     if devnet:
         uniq = sorted({u for _, u in devnet})
-        report("ОШИБКА", g, "панель «API» у расчётов (flow)", "на testnet показан адрес API сети devnet",
+        report("ИНФО", g, "панель «API» у расчётов (flow)", "в коде адрес API devnet (кнопка в сборке не показывается)",
                "; ".join(f"{n}: {u}" for n, u in devnet[:3]) + f" (уникальных: {', '.join(uniq)})")
     else:
         report("ОК", g, "панель «API» у расчётов (flow)", "адресов devnet в бандле нет")
