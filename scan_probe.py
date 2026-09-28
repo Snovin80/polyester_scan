@@ -230,6 +230,14 @@ def checks_site(ctx):
     else:
         report("ОК", g, "страница /tx/0xnothex (кривой хэш)", f"HTTP {r.status}")
 
+    # Служебные страницы разработчиков не должны быть доступны
+    for path in ("/dev/sentry-test-client", "/dev/og-images"):
+        r = get(BASE + path, name="site_dev" + path.replace("/", "_"))
+        title = re.search(r"<title>(.*?)</title>", r.body)
+        st = "ОШИБКА" if r.status == 200 else "ОК"
+        report(st, g, f"служебная страница {path}", f"HTTP {r.status}" + (f", «{title.group(1)}»" if title and r.status == 200 else ""),
+               f"GET {BASE}{path} -> HTTP {r.status}, title={title.group(1) if title else None}")
+
     # JS-бандлы страниц: ищем зашитые числа и адреса чужой сети
     app = re.search(r'_app/immutable/entry/app\.[\w-]+\.js', home.body)
     if not app:

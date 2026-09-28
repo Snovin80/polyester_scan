@@ -1,7 +1,7 @@
 # Находки: Polyester Scan testnet
 
 Проверено 28.09.2026, 15:40–16:40 UTC, живыми запросами из облачной среды.
-Основные находки 1–10 повторяет `python3 scan_probe.py` (п. 5 — только если застанет отставание счётчика).
+Основные находки 1–11 повторяет `python3 scan_probe.py` (п. 5 — только если застанет отставание счётчика).
 
 Документация: живые `testnet.polyester.com/docs/...` из облака закрыты Cloudflare, поэтому
 цитаты — из сохранённой автором копии от 10.09 (`docs/snapshot_2026-09-10/`, тогда доки были на
@@ -264,6 +264,19 @@ GET https://scan.polyester.live/api/v2/blocks?type=block&block_number=2966004&it
 **Запрос:** `GET https://testnet.polyesterscan.com/tx/0xnothex` → `HTTP 200` (≈200 КБ HTML);
 для сравнения `/this-page-does-not-exist` → `HTTP 404`.
 Так же `/block/-5`, `/address/0xZZ` → 200. Мелочь («мягкая 404»).
+
+---
+
+## 11. Отладочная страница разработчиков открыта всем
+
+**Запрос:** `GET https://testnet.polyesterscan.com/dev/sentry-test-client` (28.09 16:42 UTC)
+**Сырой ответ:** `HTTP/2 200`, `content-type: text/html`, `<title>Client Sentry Test</title>`, текст страницы:
+`Development Client Sentry Test Trigger a browser-side exception for validating Sentry client capture and source maps. Throw client exception`
+Для сравнения соседняя `/dev/og-images` → 404 (закрыта).
+
+**Ожидалось:** 404, как у `/dev/og-images`; служебные страницы не выкладывают на публичный сайт.
+**Почему ошибка:** любой посетитель может слать тестовые исключения в их Sentry (шум в мониторинге,
+расход квоты). Кнопку не нажимал. Мелочь, но показательная.
 
 ---
 

@@ -61,3 +61,23 @@
   `polyester-discord-no-urls.md` — правила текстов для команды.
 - `docs/snapshot_2026-09-10/` — сохранённые доки Polyester от 10.09 (API,
   developer, user, Python SDK; файлы по 1–3,6 МБ — искать grep'ом).
+
+## Итог первой сессии (28.09) — работа в ветке `claude/sweet-ride-9sy6va`, в main не влита
+
+- `docs/api.md` — откуда сайт берёт данные: Blockscout `scan.polyester.live` (`/api/v2`),
+  Connect-RPC/REST `api.testnet.polyester.com` (flows = LifecycleReadService), конфиг сетей в HTML.
+- `scan_probe.py` — ~65 проверок, ~2,5 мин (`--only site,bs,sol,api`, `--save data/raw`).
+- `docs/findings.md` — 11 находок с сырыми ответами и цитатами доков (копия 10.09):
+  (1) подпись Solana в ссылке шага «Deposit Seen» в нижнем регистре — битая;
+  (2) ссылки «сеть»/«нативный токен» у Solana/BTC/LTC — на основную сеть;
+  (3) XRP и SOL: комиссия удержана, `requestFee` нет → «Network Fee: None» (XRP 32/50, SOL 28/32);
+  (4) главная: Total Txns/TPS/TVL зашиты в код; (5) счётчики Blockscout обновляются раз в 30+ мин;
+  (6) кнопка «API» ведёт на альфу `api-devnet.polyester.ai` (родственно тикету 25.09);
+  (7) 500 на больших числах; (8) `total_gas_used` 0; (9) `lang="%lang%"`; (10) мягкая 404;
+  (11) `/dev/sentry-test-client` открыта. Дополнение к 28.09: `tsSec` в мс и в HTML обозревателя.
+- Команде про обозреватель ещё ничего не отправлено.
+- Грабли: Cloudflare режет `User-Agent: Python-urllib` на сайте и curl на `chain.*` в API
+  (Python с своим UA проходит); живые доки из облака закрыты; порт 8080 статистики —
+  через `{сайт}/api/stats/...`; вебсокеты из облака не работают. Ссылки страницы операции
+  есть прямо в HTML `/flow/{id}` — браузер не нужен.
+- Что проверять дальше — `docs/next_checks.md`.
