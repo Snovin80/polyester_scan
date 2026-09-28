@@ -1,7 +1,7 @@
 # Находки: Polyester Scan testnet
 
 Проверено 28.09.2026, 15:40–16:40 UTC, живыми запросами из облачной среды.
-Основные находки 1–5, 7–11 повторяет `python3 scan_probe.py` (п. 5 — только если застанет отставание счётчика).
+Основные находки 1–5, 7–12 повторяет `python3 scan_probe.py` (п. 5 — только если застанет отставание счётчика).
 
 Документация: живые `testnet.polyester.com/docs/...` из облака закрыты Cloudflare, поэтому
 цитаты — из сохранённой автором копии от 10.09 (`docs/snapshot_2026-09-10/`, тогда доки были на
@@ -291,6 +291,42 @@ GET https://scan.polyester.live/api/v2/blocks?type=block&block_number=2966004&it
 
 
 **Проверено с домашнего ПК автора (28.09 ~16:55 UTC):** страница открывается («Development · Client Sentry Test»), кнопку не нажимали.
+
+---
+
+## 12. У трети депозитов потеряны шаги операции, хотя в блокчейне они есть
+
+**Где:** API операций (`GetFlowById`, `observedSteps`) и страница операции — шаги без хэша
+(на скрине автора у депозита tXRP шаг «4 Minted and Transferred» без ссылки).
+
+**Масштаб** (28.09 ~17:05 UTC, последние завершённые депозиты, `GetFlowById` по каждому):
+```
+XRP 22 из 50 · SOL 4 из 32 · Sepolia 8 из 20 · BTC 4 из 10 · BSC 4 из 10  — всего 42 из 122
+нет шага TRANSFER (чеканка)                          — 17
+нет REQUEST, VALIDATION, TRANSFER                    — 11
+есть только SETTLEMENT (нет SOURCE…TRANSFER)         — 14
+```
+`progressTimeline` при этом у всех 300 последних депозитов полный (5 шагов) — теряются именно наблюдённые шаги.
+
+**Пример 1 — шаг есть в блокчейне, а в API нет.**
+`GetFlowById {"flowId":"flow_ab1QeSbCqcE"}` → депозит 0.05 из Sepolia (chain 2), `sourceTxHash 0xfb353d95…6deb`,
+`startedAt 16:39:35 UTC`, `observedSteps`: только `FLOW_STEP_SOURCE`, `FLOW_STEP_SETTLEMENT`.
+В сети Polyester запрос на этот депозит есть: Blockscout, контракт приёма депозитов `0x5BCd…9AE2`,
+tx `0x338bbc1e0daf8621638aa4fa4371f8e469417568d0cc6a5a14467bde9b546751` (2026-09-28T16:39:48Z),
+`reqDepositZTokens`, в запросе chainId `2`, сумма `50000000000000000`, txHash = `0xfb353d95…6deb`.
+
+**Пример 2 — только последний шаг.** `flow_7MKXJSBiZNM` (26.09 21:56 UTC): в `observedSteps` один шаг
+`FLOW_STEP_SETTLEMENT 4.999`; «сумма депозита» показана уже за вычетом комиссии. Исходная транзакция
+`SxFAycz7…Q6K` в Solana devnet существует: `finalized`, slot 504555022. Соседний депозит `flow_VsydZL4efQm`
+(5 SOL, 9 с спустя) — без шага TRANSFER.
+
+**Ожидалось:** все стадии, которые произошли, есть в операции — доки (Asset Flows): «A Flow… can link an external
+transaction, one or more Polyester Chain transactions, validator activity, and a private ledger settlement into one
+understandable record»; «Transaction links take you to the public record for that stage».
+
+**Почему ошибка:** у трети операций журнал неполный навсегда (есть примеры 2-дневной давности): нет ссылок
+на чеканку/проверку, а у операций «только SETTLEMENT» сумма депозита и комиссия показаны неверно
+(principal = уже зачисленная сумма). С пропажей комиссии (п. 3) не связано: у SOL 24 полных операции тоже без `requestFee`.
 
 ---
 

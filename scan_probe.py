@@ -694,6 +694,22 @@ def checks_api(ctx):
                "удержание по шагам: " + "; ".join(examples))
     report("ОК", g, "депозиты: комиссия указана", ", ".join(good) if good else "—")
 
+    # Полнота шагов: у завершённого депозита должны быть все наблюдённые стадии
+    need = ["SOURCE", "REQUEST", "VALIDATION", "TRANSFER", "SETTLEMENT"]
+    inc, total = [], 0
+    for f in dep[:20]:
+        fw = (rjson(rpc_call("chain.lifecycle.v1.LifecycleReadService/GetFlowById", {"flowId": f["flowId"]})) or {}).get("flow")
+        if not fw:
+            continue
+        total += 1
+        seen = {x.get("step", "").replace("FLOW_STEP_", "") for x in fw.get("observedSteps", [])}
+        miss = [k for k in need if k not in seen]
+        if miss:
+            name = (chains.get(f.get("polyesterChainId")) or {}).get("code", "?")
+            inc.append(f'{f["flowId"]} ({name}): нет {",".join(miss)}')
+    report("ОШИБКА" if inc else "ОК", g, f"депозиты: потерянные шаги ({total} последних)",
+           f"неполных {len(inc)}" if inc else "все шаги на месте", "; ".join(inc[:4]) if inc else None)
+
 def main():
     global SAVE_DIR
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])

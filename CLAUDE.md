@@ -67,14 +67,14 @@
 - `docs/api.md` — откуда сайт берёт данные: Blockscout `scan.polyester.live` (`/api/v2`),
   Connect-RPC/REST `api.testnet.polyester.com` (flows = LifecycleReadService), конфиг сетей в HTML.
 - `scan_probe.py` — ~65 проверок, ~2,5 мин (`--only site,bs,sol,api`, `--save data/raw`).
-- `docs/findings.md` — 11 находок с сырыми ответами и цитатами доков (копия 10.09):
+- `docs/findings.md` — 12 находок с сырыми ответами и цитатами доков (копия 10.09):
   (1) подпись Solana в ссылке шага «Deposit Seen» в нижнем регистре — битая;
   (2) ссылки «сеть»/«нативный токен» у Solana/BTC/LTC — на основную сеть;
   (3) XRP и SOL: комиссия удержана, `requestFee` нет → «Network Fee: None» (XRP 32/50, SOL 28/32);
   (4) главная: Total Txns/TPS/TVL зашиты в код; (5) счётчики Blockscout обновляются раз в 30+ мин;
   (6) ПОНИЖЕНО: адрес альфы devnet зашит для кнопки «API», но кнопки в сборке нет (только код);
   (7) 500 на больших числах; (8) `total_gas_used` 0; (9) `lang="%lang%"`; (10) мягкая 404;
-  (11) `/dev/sentry-test-client` открыта. Дополнение к 28.09: `tsSec` в мс и в HTML обозревателя.
+  (11) `/dev/sentry-test-client` открыта; (12) у ~1/3 депозитов потеряны шаги (в блокчейне они есть). Дополнение к 28.09: `tsSec` в мс и в HTML обозревателя.
 - Находки 1, 2, 3, 4, 5, 7, 11 подтверждены автором с домашнего ПК (28.09 ~16:50 UTC, скрины).
 - Команде про обозреватель ещё ничего не отправлено.
 - Грабли: Cloudflare режет `User-Agent: Python-urllib` на сайте и curl на `chain.*` в API
