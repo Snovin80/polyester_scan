@@ -83,3 +83,11 @@
   есть прямо в HTML `/flow/{id}` — браузер не нужен.
 - `flow_audit.py collect` — снимок операций в `data/` (8 мин) для сверок; Sepolia RPC: publicnode.
 - Что проверять дальше — `docs/next_checks.md`.
+
+## Заметки на будущее
+
+- Мейннет (проверено 28.09): в коде сайта есть только заготовки адресов (mainnet.polyester.com,
+  mainnet.polyesterscan.com, scan.polyester.com); параметров сети мейннета нет; в DNS этих адресов нет.
+  Иногда проверять: появилась ли DNS-запись (`getent hosts mainnet.polyesterscan.com scan.polyester.com
+  mainnet.polyester.com api.polyester.com rpc.polyester.com`) или параметры мейннета в бандле сайта
+  (в коде сейчас `T={devnet:_,testnet:v}` — ждать ключ mainnet). Это признак начала развёртывания, не дата.
