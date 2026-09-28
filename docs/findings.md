@@ -14,7 +14,7 @@
 | высокая | 14 — у выводов нет ссылки на транзакцию доставки |
 | средняя | 1 — битая ссылка на транзакцию Solana (нижний регистр) |
 | средняя | 2 — ссылки «сеть/нативный токен» BTC/SOL/LTC ведут в основную сеть |
-| средняя | 17 — CSV токенов сломан · 16 — внутренние транзакции не отслеживаются |
+| средняя | 17 — CSV токенов и операций сломаны · 16 — внутренние транзакции не отслеживаются |
 | средняя | 4 — заглушки на главной · 5 — счётчики отстают на 30+ мин |
 | низкая | 7, 8, 9, 10, 11, 13, 15, 18 — мелочи; 6 — понижена (только код) |
 
@@ -63,6 +63,10 @@ record for that stage. External-chain links open the relevant network explorer»
 
 **Проверено с домашнего ПК автора (28.09 ~16:55 UTC, Chrome):** ссылка шага «Deposit Seen» открывает Solscan (DEVNET), транзакция не загружается (серые заглушки); ссылка «Source Tx» — транзакция найдена: 0.01 SOL, 11:33:02 UTC, SUCCESS.
 
+
+**XRP — не затронут** (проверено автором 28.09 ~18:03 UTC): обе ссылки на `testnet.xrpl.org` (заглавными и строчными)
+открыли транзакцию «Payment · Success · 2.00 XRP» — обозреватель XRP сам понимает хэш в любом регистре.
+Поиск на сайте по подписи Solana и по `flow_SMQSpzMh1NM` находит операцию «0.01 tSOL Deposit» (скрины автора).
 ---
 
 ## 2. Ссылки «сеть» и «нативный токен» ведут в основную сеть (Solana, Bitcoin, Litecoin)
@@ -482,7 +486,7 @@ Blockscout по этой tx отдаёт 0 внутренних. Страниц�
 
 ---
 
-## 17. Выгрузка CSV таблицы токенов сломана
+## 17. Выгрузки CSV сломаны: токены (все колонки — один адрес) и операции (пустой актив)
 
 **Как:** `testnet.polyesterscan.com/tokens` → «Export Data» (браузер, 28.09 ~17:52 UTC), файл `export-Tokens-page-1.csv`:
 ```
@@ -498,6 +502,19 @@ Blockscout по этой tx отдаёт 0 внутренних. Страниц�
 blocks, flows, accounts, contracts, tokens… The download includes the current page and active filters».
 **Почему ошибка:** выгрузка не содержит ни названия, ни сети, ни выпуска — бесполезна. Выгрузки блоков и транзакций рабочие.
 
+
+**Операции (Flows)** — выгрузка сделана автором с домашнего ПК (28.09 ~18:03 UTC), файл `export-flows-page-1.csv`
+(копия: `docs/evidence_export-flows-page-1.csv`):
+```
+Type,Account,Asset,Amount,Status,Flow ID,Created (UTC)
+Transfer,0xbdc30e542a5c1333f071be7aec342dae8578063c,,1000,settlement,flow_5z1o1Vm7yST,2026-09-28T18:02:59.350Z
+Transfer,0xbdc30e542a5c1333f071be7aec342dae8578063c,,14.2,settlement,flow_VKAGfQej5DK,2026-09-28T18:02:59.350Z
+Withdraw,0x7db0a74e84b8a245928d691358a9fe8bc3e15eef,,0.0005,settlement,flow_CqhhhDwtkkJ,2026-09-28T18:01:27.000Z
+Deposit,0x7db0a74e84b8a245928d691358a9fe8bc3e15eef,,2,settlement,flow_GQfBFybaG5g,2026-09-28T18:01:06.757Z
+```
+Во всех 25 строках колонка **Asset пустая** — «1000», «14.2», «2» без указания, чего; на странице в той же строке
+«1,000 USDT Tether USD», «14.2 LTC Litecoin». В «Status» — внутреннее имя шага `settlement`, а на странице «Completed».
+Хэшей транзакций в выгрузке нет (на странице есть Source tx / Completion tx).
 ---
 
 ## 18. (мелочи интерфейса)
